@@ -13,13 +13,13 @@ https://arxiv.org/abs/2111.15431
 > loud()
 
 #create a data set, infinite number of samples
->D<-sense_createdata(n=2,u=5)
+>D<-blica_createdata(n=2,u=5)
 
 #Upper bound on the likelihood is available by
-> sense_upper(D)
+> blica_upper(D)
 
 #run lbfgs:
->sense_lbfgs(D)   
+>blica(D)   
 
 #or you can run gradient descent, uses Miwa() by default
 >sense_gd(D)
