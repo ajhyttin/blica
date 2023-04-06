@@ -1,4 +1,4 @@
-# blica
+# Blica
 Code for the Blica method published at UAI2022.
 
 Note that the iVAE based method can be found in a separate repo: 
