@@ -14,9 +14,9 @@ Details:
 This the R code for the method by the original authors. This code is research code, and thus aim is to provide an implementation to 
 method in the paper. While much of the method is likely easy to reproduce from the paper, i.e. in Python, the code provides:
 
--How to calculate the derivatives of the scaled Gaussian likelihood. This is needed for LBFGS to work. They are present in scaled_gaussian.R
+-How to calculate the derivatives of the scaled Gaussian likelihood. This is needed for LBFGS to work. They are present in scaledgaussian.R
 
--An algorithm to calculate the correlations from binary data. This is in blica_correlations.R.
+-An algorithm to calculate the correlations from binary data. This is in blica_correlation.R.
 
 -Data creating from the Blica model at infinite sample limit in blica_createdata.R. Only distributions for each pair are created as the Blica
 method uses only those.
