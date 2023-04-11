@@ -29,7 +29,7 @@ regardless of sample count).
 
 -Loading sample data in a format that can be used by Blica.
 
--Reproducing plots similar in the paper.
+-Reproducing plots (similar to the ones) in the paper.
 
 How to use:
 -----------
