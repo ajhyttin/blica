@@ -25,9 +25,11 @@ Further improvements planned:
 -----------------------------
 
 -Weighing different segments by their sample size (instead on weighing each segment equally 
-regardless of sample count)
+regardless of sample count).
 
--Loading sample data in a format that can be used 
+-Loading sample data in a format that can be used by Blica.
+
+-Reproducing plots similar in the paper.
 
 How to use:
 -----------
