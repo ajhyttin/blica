@@ -29,8 +29,8 @@ regardless of sample count)
 
 -Loading sample data in a format that can be used 
 
-How to start:
--------------
+How to use:
+-----------
 
 To start go to the directory of the code and start R. Type the following to load the code:
 
@@ -44,6 +44,9 @@ Run tests in test.R:
 Install any packages that are reported missing.
 
 How to use Blica in your use case should be appararent from the code of the tests in test.R.
+
+Contact:
+--------
 
 If you cannot solve any problems yourself 
 
