@@ -14,7 +14,7 @@ Details:
 This the R code for the method by the original authors. This code is research code, and thus aim is to provide an implementation to 
 method in the paper. While much of the method is likely easy to reproduce from the paper, i.e. in Python, the code provides:
 
--How to calculate the derivatives of the scaled Gaussian likelihood. This is needed for LBFGS to work. They are present in scaledgaussian.R
+-How to calculate the derivatives of the scaled Gaussian likelihood. This is needed for LBFGS to work. They are present in scaledgaussian.R.
 
 -An algorithm to calculate the correlations from binary data. This is in blica_correlation.R.
 
@@ -32,7 +32,9 @@ Further improvements planned:
 
 -Outputting sources in a sample data form.
 
--Running several different seeds and ce
+-Running several different seeds.
+
+-Adding the log-likelihood function calculations to run a likelihood based method (which is inefficient in practice).
 
 How to use:
 -----------
@@ -57,14 +59,14 @@ Run tests in test.R:
 
 > test5()
 
-Test should finish in minutes and give MCS value close to 1. These tests run only a single seed: you might want to call blica several times and select the best run according to likelihood value obtained, to disregard runs that converge to a local optima.
+Test should finish in minutes and give MCS value close to 1. These tests run only a single seed: you might want to call blica several (e.g. 3) times and select the best run according to likelihood value obtained, to disregard runs that converge to a local optima.
 
-How to use Blica in your use case should be apparent from the code of the tests in test.R.
+How to use Blica in a use case should be apparent from the code of the tests in test.R.
 
 Contact:
 --------
 
-If you cannot solve any problems yourself 
+If you cannot solve any problems yourself contact:
 
 Antti Hyttinen
 ajhyttin@gmail.com

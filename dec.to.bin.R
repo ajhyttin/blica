@@ -29,17 +29,3 @@ bin.to.dec  = function( Base.b ) {
   ndigits = length(Base.b)
   sum(Base.b*2^((ndigits-1):0))
 }
-
-
-
-# # Changes a decimal integer x into a binary number with ndigits.
-# 
-# dec.to.bin  =  function( x, ndigits ) {
-# 
-#   Base.b  =  array(NA, dim=c(1, ndigits))
-#   for(i in 1:ndigits){
-#     Base.b[, ndigits-i+1]  =  (x %% 2)
-#     x  =  (x %/% 2)
-#   }
-#   Base.b[1, ]
-# }
