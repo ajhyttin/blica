@@ -40,6 +40,7 @@ How to use:
 To start go to the directory of the code and start R. Type the following to load the code:
 
 > source('load.R')
+
 > loud()
 
 Install any packages that are reported missing here or during the test runs. The particular packages the code extensively uses are 'mvtnorm' for truncated normal distribution calculations and 'lpSolve' calculating the MCS taking account the order indeterminacy of the sources which is common in ICA literature.
