@@ -18,11 +18,11 @@ blica<-function(D,type='pairwise',lseed=NA,cor_method='o',verbose=TRUE,reg=NA,
   
   #first step
   if ( is.na(reg) && D$type == "sample" ) reg<-10 #regularization needed only for sample data
-  if ( is.na(reg) && D$type == "infinite" ) reg<-0
-  if ( verbose ) cat('reg =',reg,'\n')
+  if ( is.na(reg) && D$type == "infinite" ) reg<-NA
+  if ( verbose ) cat('reg =',reg,' (NA means no regularization of estimated correlation matrices.)\n')
 
   if ( is.na(n) && D$type == "sample" ) n<-ncol(D$X[[1]])
-  if ( is.na(n) && D$type == "infinite" ) n<-max(DI$pairs)
+  if ( is.na(n) && D$type == "infinite" ) n<-max(D$pairs)
   if ( verbose ) cat('n =',n,'\n')
   
   if (is.na(nsources) && true_model_given ) nsources<-ncol(D$M$A) #number of sources can be determined only 
@@ -31,7 +31,7 @@ blica<-function(D,type='pairwise',lseed=NA,cor_method='o',verbose=TRUE,reg=NA,
   if ( verbose ) cat('nsources =',nsources,'\n')
   
   
-  if (D$type=="sample") us<-length(D$X)
+  if (D$type=="sample") u<-length(D$X)
   if (D$type == "infinite" )  u<-dim(D$counts)[1]
   if ( verbose ) cat('segments=',u,'\n')
   
@@ -48,7 +48,7 @@ blica<-function(D,type='pairwise',lseed=NA,cor_method='o',verbose=TRUE,reg=NA,
   #create the continuous data structure into whcih the estimates will be written
   DC<-blica_createdatac(n=n,u=u,nsources=nsources,N=D$N)
   DC$N[is.infinite(DC$N)]<-10 #put here sample size to 10 if infinite sample data
-  
+
   us = 1:u
   for ( ui in us ) {
     
@@ -90,25 +90,31 @@ blica<-function(D,type='pairwise',lseed=NA,cor_method='o',verbose=TRUE,reg=NA,
     } #for i
     
     if ( verbose ) cat('segment:',ui,'/',u,'\n')
-    if (D$type != "sample"  && true_model_given) {
+    if (D$type != "sample"  && true_model_given ) {
       error<-max(abs(cov2cor(covest)-cov2cor(covtru)))
-      if ( verbose ) cat(' max cor error:',error,'\n')
+      if ( verbose ) cat(' max cor error before regularization:',error,'\n')
     }
 
     evs<-eigen(covest)$values
     if ( verbose ) cat('min eigenvalue before regularization:',min(evs),'\n')      
-    deltai<-max(c( 0 , (max(evs)-reg*min(evs))/(reg-1) ) )
-    #deltai<-0
-    covest<-1/(1+deltai)*(covest+deltai*diag(n))
-    evs<-eigen(covest)$values
-    if ( verbose ) cat('min eigenvalue after regularization:',min(evs),'\n')      
-
-    if (D$type != "sample" && true_model_given) {
-      error<-max(abs(cov2cor(covest)-cov2cor(covtru)))
-      if ( verbose ) cat(' max cor error:',error,'\n')
+    
+    if ( !is.na(reg) ) { 
+      deltai<-max(c( 0 , (max(evs)-reg*min(evs))/(reg-1) ) )
+  
+          
+      covest<-1/(1+deltai)*(covest+deltai*diag(n))
+      evs<-eigen(covest)$values
+      if ( verbose ) cat('min eigenvalue after regularization:',min(evs),'\n')      
+  
+      if (D$type != "sample" && true_model_given) {
+        error<-max(abs(cov2cor(covest)-cov2cor(covtru)))
+        if ( verbose ) cat(' max cor error after regularization:',error,'\n')
+      }
+    } else {
+      cat('No regularization done.\n')
     }
     if (any(evs < 0) ) { #some regularization needed
-      stop('Negative eigenvalues after regularization. Use a higer regularization parameter, e.g., current+10.')
+      stop('Negative eigenvalues (after regularization). Use a higer regularization parameter, e.g., current+10.')
     }
 
     DC$sigmax[ui,,]<-covest

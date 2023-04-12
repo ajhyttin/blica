@@ -24,12 +24,15 @@ method uses only those.
 Further improvements planned: 
 -----------------------------
 
--Weighing different segments by their sample size (instead on weighing each segment equally 
-regardless of sample count).
-
--Loading sample data in a format that can be used by Blica.
-
 -Reproducing plots (similar to the ones) in the paper.
+
+-Report the packages needed.
+
+-Improving clarity, style, usability and adding comments.
+
+-Outputting sources in a sample data form.
+
+-Running several different seeds and ce
 
 How to use:
 -----------
@@ -39,13 +42,19 @@ To start go to the directory of the code and start R. Type the following to load
 > source('load.R')
 > loud()
 
+Install any packages that are reported missing here or during the test runs. The particular packages the code extensively uses are 'mvtnorm' for truncated normal distribution calculations and 'lpSolve' calculating the MCS taking account the order indeterminacy of the sources which is common in ICA literature.
+
 Run tests in test.R:
 
 > test1()
+> test2()
+> test3()
+> test4()
+> test5()
 
-Install any packages that are reported missing.
+Test should finish in minutes and give MCS value close to 1. These tests run only a single seed: you might want to call blica several times and select the best run according to likelihood value obtained, to disregard runs that converge to a local optima.
 
-How to use Blica in your use case should be appararent from the code of the tests in test.R.
+How to use Blica in your use case should be apparent from the code of the tests in test.R.
 
 Contact:
 --------

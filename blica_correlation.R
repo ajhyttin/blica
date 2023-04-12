@@ -1,5 +1,6 @@
 blica_correlation<-function( counts, method='o',transform=FALSE,verbose=FALSE,cortru=NA) {
-  #cat('At blica_correlation:\n')
+  #calculates the pairwise correlation for two binary variables as defined in the paper, i.e.
+  #which correlation the variables have before binarization.
   #browser()
 
   #if ( method!= "weighted") counts<-counts+1
@@ -9,8 +10,6 @@ blica_correlation<-function( counts, method='o',transform=FALSE,verbose=FALSE,co
     #cat('Counts:',counts,'\n')
     #counts<-counts+1
   }
-  #print(counts)
-  #counts<-counts/sum(counts)
   if ( method == 'first' ) {
     Dp<-blica_createdata(n=2,u=1,pairwise=FALSE) #now need to update counts
     Dp$counts[1,]<-counts
@@ -92,13 +91,7 @@ blica_correlation<-function( counts, method='o',transform=FALSE,verbose=FALSE,co
         #M$coefficients<-c(R$par^2,(-2)*R$par,1)
         R$par2<-(-1)*M$coefficients[2]/(2*M$coefficients[3])
         if ( !is.na(cortru ) ) {
-  
-          #plot(a,fval,ylim=c(min(fval),max(fval)),xlim=c(-1,1))
-          #lines(c(1,1)*cortru,c(min(fval),max(fval)),col='red')
-          #lines(c(1,1)*R$par,c(min(fval),max(fval)),col='green')
-          #lines(a,cbind(1,a,a^2)%*%M$coefficients,col='blue')
-          ##ines(a,M$fitted.values,col='blue')
-          
+
           loss<-sum(M$coefficients*c(1,cortru,cortru^2))
           error<- abs(R$par-cortru)
           cat('counts:',paste(counts,collapse='-'),
@@ -134,49 +127,21 @@ blica_correlation<-function( counts, method='o',transform=FALSE,verbose=FALSE,co
     } else {
       #cat('Transformed.\n')
       p0<-log((p0+1)/2)-log((1-(p0+1)/2))
-      #browser()
-     # R<-optim(par=p0,fn=blica_correlation_f,gr=blica_correlation_g,method="L-BFGS-B",
-    #         upper=15.293,lower=-15.293, #according to above
-     #        control=list(maxit=100000,pgtol=1e-10,factr=0),
-      #       counts=counts,mu=mu,transform=transform,f_upper=0)
-      #32 sec 10 segments 10 obs 
-      #THE USED:
-      #R<-optim(par=p0,fn=blica_correlation_f,gr=blica_correlation_g,method="Brent",
-      #         upper=15.293,lower=-15.293, #according to above
-      #         control=list(maxit=100000,pgtol=1e-10,factr=0),
-      #         counts=counts,mu=mu,transform=transform,f_upper=0)
-      #14.5 sec  10 segments 10 obs
-      #R<-optim(par=p0,fn=blica_correlation_f,gr=blica_correlation_g,method="Brent",
-      #         upper=15.293,lower=-15.293, #according to above
-      #         control=list(maxit=10,pgtol=1e-2,factr=10),
-      #         counts=counts,mu=mu,transform=transform,f_upper=0)
-      #no help
-      #R<-optim(par=p0,fn=blica_correlation_f,gr=blica_correlation_g,method="Brent",
-      #         upper=15.293,lower=-15.293, #according to above
-               #control=list(maxit=100000,pgtol=1e-10,factr=0),
-       #        counts=counts,mu=mu,transform=transform,f_upper=0)
       R<-optimize(f=blica_correlation_f,interval=c(-15.293,15.293),
                counts=counts,mu=mu,transform=transform,f_upper=0)
       # 11.363 secs
       R$par<-R$minimum
       browser()
     }
-    #print(R)
-    #alpha<-2*exp(R$par)/(1+exp(R$par))-1
-    #nlminb(start=0,objective=blica_correlation_f, gradient=blica_correlation_g,counts=counts,mu=mu,upper=1,lower=-1)
-    #print(alpha)
-    #blica_correlation_g(R$par,counts,mu,verbose=TRUE)
+
     alpha<-R$par
     if ( method == "weighted") attr(alpha,'weight')<-w
     #alpha<-R$minimum
     if (transform ) { #this is wrong we need to transform the other direction
-      #browser()
+
       alpha<-2*exp(R$par)/(1+exp(R$par))-1
-      #(1+exp(R$par))*(alpha+1)/2<-exp(R$par)
-      #((alpha+1)/2)/(1-(alpha+1)/2)<-exp(R$par) 
-      #alpha<-log((R$par+1)/2)-log((1-(R$par+1)/2))
     }
-    #df<-blica_correlation_g(alpha,counts=counts,mu=mu,transform=FALSE,f_upper=0)
+
     if (verbose ) cat('spearman:',alpha0,'qcor:',alpha,'grad:',df,'\n')
     #browser()
     alpha
@@ -317,13 +282,6 @@ correlation_likelihood<-function(mu,sigma,counts,gradient=TRUE,verbose=FALSE,pmv
     
   }
   p<-p/sum(p)
-  
-  #if (gradient) print(max(abs(colSums(p*tmeans)-mu)))
-  #colSums(p*tmeans)-mu = 0 roughly here, so could apply normalization
-  #similar normalization can be obtained for tvars? but it is more complicated
-  #summing over all should give the same
-  #but on the other hand, computationally we may only want to calculate a subset of the above?
-  #browser()
   
   l<-0
   mugs<-rep(0,n)

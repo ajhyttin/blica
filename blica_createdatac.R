@@ -40,7 +40,6 @@ blica_createdatac<-function(n=2,u=40,nsources=n,N=Inf,M=NULL,noisevar=0.1) {
     D$sigmax[ui,,]<-A%*%diag(exp(sigma[ui,]))%*%t(A)+noisevar*diag(n)
     if ( !is.infinite(N[ui]) )  {
       #in this case just rewrite the sufficient statistics
-      browser()
       Z<-rmvnorm(N[ui],mean=D$mux[ui,],sigma=D$sigmax[ui,,])
       D$mux[ui,]<-colMeans(Z)
       D$sigmax[ui,,]<-cov(Z)*(N[ui]-1)/N[ui] #correcting here to finally get sufficient statistics

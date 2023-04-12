@@ -1,6 +1,6 @@
 blica_createdata<-function(n=2,u=40,nsources=n,N=Inf,M=NULL,
                            pmvnorm.algorithm=Miwa(steps=4098/2),
-                           pairwise=TRUE,verbose=TRUE,kappalim=20) {
+                           pairwise=TRUE,verbose=TRUE,kappalim=NA) {
   # n - the number of observed variables
   # u - the number of segments
   # nsources - the number of latent sources
@@ -46,7 +46,7 @@ blica_createdata<-function(n=2,u=40,nsources=n,N=Inf,M=NULL,
     u<-nrow(M$sigma)
   }
 
-  if ( any(is.finite(N)) && any(!is.finite(N))) stop('Mixture of infinite and finite sample data not supported.')
+  if ( any(is.finite(N)) && any(is.infinite(N))) stop('Mixture of infinite and finite sample data not supported.')
   
   if ( any(is.finite(N)) ) pairwise=FALSE  
   if (length(N) == 1) N<-rep(N,u)
@@ -59,7 +59,7 @@ blica_createdata<-function(n=2,u=40,nsources=n,N=Inf,M=NULL,
       kappalim<-est.kappa(n,nsources,times=1000)
     }
     while ( TRUE ) { #used to be without condition number check
-      A<-array(runif(n*nsources,min=-3,max=3),c(n,nsources)) #used to be 3
+      A<-array(runif(n*nsources,min=-3,max=3),c(n,nsources))
       kappa<-kappa(A)
       if ( kappa <= kappalim ) break;
       cat('rejected kappa=',kappa,'\n')
