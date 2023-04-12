@@ -47,9 +47,13 @@ Install any packages that are reported missing here or during the test runs. The
 Run tests in test.R:
 
 > test1()
+
 > test2()
+
 > test3()
+
 > test4()
+
 > test5()
 
 Test should finish in minutes and give MCS value close to 1. These tests run only a single seed: you might want to call blica several times and select the best run according to likelihood value obtained, to disregard runs that converge to a local optima.
