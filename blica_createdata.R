@@ -38,14 +38,20 @@ blica_createdata<-function(n=2,u=40,nsources=n,N=Inf,M=NULL,
   # D$X is a list of data
   # D$X[[i]] is the sample data for segment i (N x n)
   
-  
+
   
   if ( !is.null(M) ) {
     n<-nrow(M$A)
     nsources<-ncol(M$A)
     u<-nrow(M$sigma)
   }
-  if ( is.finite(N) ) pairwise=FALSE
+
+  if ( any(is.finite(N)) && any(!is.finite(N))) stop('Mixture of infinite and finite sample data not supported.')
+  
+  if ( any(is.finite(N)) ) pairwise=FALSE  
+  if (length(N) == 1) N<-rep(N,u)
+
+  
   #<-1
   #diag(A)<-c(1,1)
   if ( is.null(M) ) {
@@ -100,34 +106,34 @@ blica_createdata<-function(n=2,u=40,nsources=n,N=Inf,M=NULL,
   } else {
    # D$counts<-array(NA,c(u,2^n))
   }
-  for ( u in us ) {
+  for ( ui in us ) {
     #cat(u,'\n')
-    if (verbose ) cat(u,'/',max(us),'\n')
-    if ( !is.infinite(N) )  {
-      Z<-array(0,c(N,nsources))
+    if (verbose ) cat(ui,'/',max(us),'\n')
+    if ( !is.infinite(N[ui]) )  {
+      Z<-array(0,c(N[ui],nsources))
       for ( i in 1:nsources ) {
-        Z[,i]<-rnorm(N,mean=mu[u,i],sd=sqrt(exp(sigma[u,i])))
+        Z[,i]<-rnorm(N[ui],mean=mu[ui,i],sd=sqrt(exp(sigma[ui,i])))
       }
       mZ<-t(A%*%t(Z))
-      prob<-array(0,c(N,0))
+      prob<-array(0,c(N[ui],0))
       for ( i in 1:n ) {
         prob<-cbind(prob,pnorm(sqrt(pi/8)*mZ[,i]))
         
       }
   
-      X<-array(0,c(N,n))
-      for (i in 1:N ) {
+      X<-array(0,c(N[ui],n))
+      for (i in 1:N[ui] ) {
         for (j in 1:n ) {
           X[i,j]<-sample(c(1,0),1,prob=c(prob[i,j],1-prob[i,j]))
         }
       }
-      D$X[[u]]<-X
+      D$X[[ui]]<-X
       D$type="sample"
 
     } else {
-      mean<-as.vector((-1)*sqrt(pi/8)*A%*%mu[u,])
-      Su<-diag(exp(sigma[u,]))
-      if ( nsources == 1) Su=exp(sigma[u,])
+      mean<-as.vector((-1)*sqrt(pi/8)*A%*%mu[ui,])
+      Su<-diag(exp(sigma[ui,]))
+      if ( nsources == 1) Su=exp(sigma[ui,])
       var<-diag(n)+(pi/8)*A%*%Su%*%t(A)
  
       if ( pairwise ) {
@@ -140,7 +146,7 @@ blica_createdata<-function(n=2,u=40,nsources=n,N=Inf,M=NULL,
             lower[conf==1]<-(-Inf)
             #print(dim(D$counts))
             #print(c(u,j,i))
-            D$counts[u,j,i]<-pmvnorm(upper=upper,lower=lower,mean=mean[pair],sigma=var[pair,pair],algorithm=pmvnorm.algorithm)
+            D$counts[ui,j,i]<-pmvnorm(upper=upper,lower=lower,mean=mean[pair],sigma=var[pair,pair],algorithm=pmvnorm.algorithm)
           }
         }
         D$type='infinite'
@@ -150,12 +156,13 @@ blica_createdata<-function(n=2,u=40,nsources=n,N=Inf,M=NULL,
           upper<-lower<-rep(0,n)
           upper[conf==0]<-Inf
           lower[conf==1]<-(-Inf)
-          D$counts[u,i]<-pmvnorm(upper=upper,lower=lower,mean=mean,sigma=var,algorithm=pmvnorm.algorithm)
+          D$counts[ui,i]<-pmvnorm(upper=upper,lower=lower,mean=mean,sigma=var,algorithm=pmvnorm.algorithm)
         }
       }
     }
   }
-
+  D$N <- N
+  
   D$M<-list(A=A,mu=mu,sigma=sigma)
   D$M$p<-blica_M2p(D$M)
   D

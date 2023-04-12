@@ -11,23 +11,23 @@ scaledgaussian_p2Mu<-function(p,n,u,nsources=n,scale=FALSE,mean=TRUE) {
   M<-list(sigma=array(0,c(u,nsources)),
           q=array(0,c(u,n)),
           A=array(0,c(n,nsources)) )
-  for ( u in us ) { #loop through the different segments
+  for ( ui in us ) { #loop through the different segments
     
     #determine the p for tphis one
     if ( scale && !mean ) {
-      pindex<- c( ((u-1)*n+1):(u*n),  #scaling factors
-                  total_us*n+ (((u-1)*nsources+1):(u*nsources)), #variances
+      pindex<- c( ((ui-1)*n+1):(ui*n),  #scaling factors
+                  total_us*n+ (((ui-1)*nsources+1):(ui*nsources)), #variances
                   (length(p)-n*nsources+1):length(p)) #a matrix  
       
     } else if ( scale && mean ) {
-      pindex<- c( ((u-1)*nsources+1):(u*nsources),  #means
-                  total_us*nsources+ (((u-1)*nsources+1):(u*nsources)), #variances
-                  2*total_us*nsources+ (((u-1)*n+1):(u*n)), #scales
+      pindex<- c( ((ui-1)*nsources+1):(ui*nsources),  #means
+                  total_us*nsources+ (((ui-1)*nsources+1):(ui*nsources)), #variances
+                  2*total_us*nsources+ (((ui-1)*n+1):(ui*n)), #scales
                   (length(p)-n*nsources+1):length(p)) #the mixing matrix
       
     } else {
-      pindex<- c( ((u-1)*nsources+1):(u*nsources),  #means
-                  total_us*nsources+ (((u-1)*nsources+1):(u*nsources)), #variances
+      pindex<- c( ((ui-1)*nsources+1):(ui*nsources),  #means
+                  total_us*nsources+ (((ui-1)*nsources+1):(ui*nsources)), #variances
                   (length(p)-n*nsources+1):length(p)) #a matrix
     }
     pu<-p[pindex] #parameters for this particular segment
@@ -99,32 +99,32 @@ scaledgaussian_likelihood<-function(p,D,gradient=TRUE,verbose=FALSE,us=1:nrow(D$
   total_us<-nrow(D$M$mu)
   grad<-rep(0,length(p))
   l<-0
-  for ( u in us ) { #loop through the different segments
+  for ( ui in us ) { #loop through the different segments
     
     #determine the p for this segment
     if ( scale && !mean ) {
-      pindex<- c( ((u-1)*n+1):(u*n),  #scaling factors
-                  total_us*n+ (((u-1)*nsources+1):(u*nsources)), #variances
+      pindex<- c( ((ui-1)*n+1):(ui*n),  #scaling factors
+                  total_us*n+ (((ui-1)*nsources+1):(ui*nsources)), #variances
                   (length(p)-n*nsources+1):length(p)) #a matrix  
       
     } else if ( scale && mean ) {
-      pindex<- c( ((u-1)*nsources+1):(u*nsources),  #means
-                  total_us*nsources+ (((u-1)*nsources+1):(u*nsources)), #variances
-                  2*total_us*nsources+ (((u-1)*n+1):(u*n)), #scales
+      pindex<- c( ((ui-1)*nsources+1):(ui*nsources),  #means
+                  total_us*nsources+ (((ui-1)*nsources+1):(ui*nsources)), #variances
+                  2*total_us*nsources+ (((ui-1)*n+1):(u*n)), #scales
                   (length(p)-n*nsources+1):length(p)) #the mixing matrix
       
     } else {
-      pindex<- c( ((u-1)*nsources+1):(u*nsources),  #means
-                  total_us*nsources+ (((u-1)*nsources+1):(u*nsources)), #variances
+      pindex<- c( ((ui-1)*nsources+1):(ui*nsources),  #means
+                  total_us*nsources+ (((ui-1)*nsources+1):(ui*nsources)), #variances
                   (length(p)-n*nsources+1):length(p)) #a matrix
     }
     pu<-p[pindex] #parameters for this particular segment
     
-    mux<-D$mux[u,]  #data has D$mux[u,] as mean of x and D$sigmax[u,,] as the covariance/correlation matrix
+    mux<-D$mux[ui,]  #data has D$mux[u,] as mean of x and D$sigmax[u,,] as the covariance/correlation matrix
     if (!mean) mux=NA
     
-    ll<-scaledgaussian_likelihood_p(pu,mux=mux,sigmax=D$sigmax[u,,],N=D$N,gradient=gradient,verbose=verbose,X=NULL,nsources,scale=scale,noisevar=noisevar,mean=mean)
-    #cat('u:',u,'ll:',ll,'\n')
+    ll<-scaledgaussian_likelihood_p(pu,mux=mux,sigmax=D$sigmax[ui,,],N=D$N[ui],gradient=gradient,verbose=verbose,X=NULL,nsources,scale=scale,noisevar=noisevar,mean=mean)
+    #cat('u:',ui,'ll:',ll,'N:',D$N[ui],'\n')
     if ( is.na(ll) ) return(NA)
     
     l<-l+ll  #here could apply the weighting of different data sets
@@ -212,7 +212,6 @@ scaledgaussian_likelihood_plain<-function(mu,sigma,mux=colMeans(X),sigmax=(N-1)/
 
   n<-length(mu)
   if (mean) mu<-as.vector(mu)
-
   
   if (nrow(sigma) != ncol(sigma) ) sigma<-diag(as.vector(sigma))
 

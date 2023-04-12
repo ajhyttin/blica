@@ -2,6 +2,10 @@ blica_createdatac<-function(n=2,u=40,nsources=n,N=Inf,M=NULL,noisevar=0.1) {
   #Creates a continuous data set.
   #Used for example for initializing the optimization.
   #<-1
+  if ( any(is.finite(N)) && any(is.infinite(N))) stop('Mixture of infinite and finite sample data not supported.')
+  
+  if (length(N) == 1) N<-rep(N,u)
+  
   #diag(A)<-c(1,1)
   if ( is.null(M) ) {
     A<-array(0,c(n,n))
@@ -31,20 +35,21 @@ blica_createdatac<-function(n=2,u=40,nsources=n,N=Inf,M=NULL,noisevar=0.1) {
   D$mux<-array(0,c(length(us),n))
   D$sigmax<-array(0,c(length(us),n,n))
 #  D$X<- no need to use samples
-  for ( u in us ) {
-    D$mux[u,]<-A%*%mu[u,]
-    D$sigmax[u,,]<-A%*%diag(exp(sigma[u,]))%*%t(A)+noisevar*diag(n)
-    if ( !is.infinite(N) )  {
+  for ( ui in us ) {
+    D$mux[ui,]<-A%*%mu[ui,]
+    D$sigmax[ui,,]<-A%*%diag(exp(sigma[ui,]))%*%t(A)+noisevar*diag(n)
+    if ( !is.infinite(N[ui]) )  {
       #in this case just rewrite the sufficient statistics
-      Z<-rmvnorm(N,mean=D$mux[u,],sigma=D$sigmax[u,,])
-      D$mux[u,]<-colMeans(Z)
-      D$sigmax[u,,]<-cov(Z)*(N-1)/N #correcting here to finally get sufficient statistics
-      D$X<-rbind(D$X,cbind(Z,u))
+      browser()
+      Z<-rmvnorm(N[ui],mean=D$mux[ui,],sigma=D$sigmax[ui,,])
+      D$mux[ui,]<-colMeans(Z)
+      D$sigmax[ui,,]<-cov(Z)*(N[ui]-1)/N[ui] #correcting here to finally get sufficient statistics
+      D$X<-rbind(D$X,cbind(Z,ui))
     }
   }
   q=array(0,c(u,n))
-  D$infinite<-is.infinite(N)
-  D$N<-10
+  D$infinite<-any(is.infinite(N))
+  D$N<-N #this was fixed to 10 earlier when variable sample segments were not supported
   D$continuous=TRUE
   D$M<-list(A=A,mu=mu,sigma=sigma,q=q)
   D$M$p<-blica_M2p(D$M,scale=TRUE)
