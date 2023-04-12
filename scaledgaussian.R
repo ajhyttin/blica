@@ -1,4 +1,11 @@
 scaledgaussian_p2Mu<-function(p,n,u,nsources=n,scale=FALSE,mean=TRUE) {
+  # Turns a parameter vector p into model defined by a list.
+  # p - parameter vector for the Blica model.
+  # n - number of observed variables
+  # u - number of segments
+  # nsources - number of latent sources
+  # mean - whether means are included in p.
+  # scale - tells whether a scaling terms are included in p.
   us<-1:u
   total_us<-u
   M<-list(sigma=array(0,c(u,nsources)),
@@ -8,14 +15,6 @@ scaledgaussian_p2Mu<-function(p,n,u,nsources=n,scale=FALSE,mean=TRUE) {
     
     #determine the p for tphis one
     if ( scale && !mean ) {
-      #browser()
-      #pindex<- c( ((u-1)*nsources+1):(u*nsources),  #scaling factors
-      #            total_us*nsources+ (((u-1)*nsources+1):(u*nsources)), #variances
-      #€            (length(p)-n*nsources+1):length(p)) #a matrix    
-      #pindex<- c( ((u-1)*nsources+1):(u*nsources),  #scaling factors
-      #            total_us*nsources+ (((u-1)*nsources+1):(u*nsources)), #variances
-      #            (length(p)-n*nsources+1):length(p)) #a matrix    
-      
       pindex<- c( ((u-1)*n+1):(u*n),  #scaling factors
                   total_us*n+ (((u-1)*nsources+1):(u*nsources)), #variances
                   (length(p)-n*nsources+1):length(p)) #a matrix  
@@ -33,19 +32,25 @@ scaledgaussian_p2Mu<-function(p,n,u,nsources=n,scale=FALSE,mean=TRUE) {
     }
     pu<-p[pindex] #parameters for this particular segment
     Mu<-scaledgaussian_p2M(pu,n,nsources=nsources,scale=scale,mean=mean)
-    #print(Mu)
-   # browser()
+
     M$sigma[u,]<-diag(Mu$sigma)
     M$q[u,]<-diag(Mu$q)
     M$A<-Mu$A
-    #browser()
+
   }
   M
 }
 
 
 scaledgaussian_M2p<-function(M,scale=FALSE,mean=FALSE) {
-
+  #Turns a model into a parameter vector.
+  # M - model as a list.
+  # n - number of observed variables
+  # u - number of segments
+  # nsources - number of latent sources
+  # mean - whether means are included in p.
+  # scale - tells whether a scaling terms are included in p.
+  
   if ( scale && !mean ) {
     c(t(M$q),t(M$sigma),as.vector(M$A))
   } else if (scale && mean ) {
@@ -56,11 +61,9 @@ scaledgaussian_M2p<-function(M,scale=FALSE,mean=FALSE) {
 }
 
 scaledgaussian_p2M<-function(p,n,nsources=n,scale=FALSE,mean=TRUE) {
-  #if (nsources != n ) browser()
- # browser()
   M<-list()
   if ( mean ) M$mu<-p[1:nsources]
-  #print(mu)
+
   M$sigma<-array(0,c(nsources,nsources))
   diag(M$sigma)<-p[(nsources+1):(2*nsources)]
   
@@ -81,7 +84,16 @@ scaledgaussian_p2M<-function(p,n,nsources=n,scale=FALSE,mean=TRUE) {
 
 
 
-scaledgaussian_likelihood<-function(p,D,gradient=TRUE,verbose=FALSE,us=1:nrow(D$M$mu),scale=FALSE,noisevar=0.1,mean) {
+scaledgaussian_likelihood<-function(p,D,gradient=TRUE,verbose=FALSE,us=1:nrow(D$M$mu),scale=FALSE,noisevar=8/pi,mean) {
+  # Scaled gaussian log-likelihood 
+  # p - parameter vector of the model
+  # D - continuous data set
+  # gradient - whether gradient should be returned
+  # verbose - print information or not
+  # us - indexes of the segments
+  # scale - scaling terms included or not
+  # noisevar - the used variance (default=8/pi, this is due to coefficient sqrt(pi/8))
+  # mean - whether mean is included
   n<-nrow(D$M$A)
   nsources<-ncol(D$M$A)
   total_us<-nrow(D$M$mu)
@@ -89,17 +101,11 @@ scaledgaussian_likelihood<-function(p,D,gradient=TRUE,verbose=FALSE,us=1:nrow(D$
   l<-0
   for ( u in us ) { #loop through the different segments
     
-    #determine the p for tphis one
+    #determine the p for this segment
     if ( scale && !mean ) {
-      #pindex<- c( ((u-1)*nsources+1):(u*nsources),  #scaling factors
-      #            total_us*nsources+ (((u-1)*nsources+1):(u*nsources)), #variances
-      #            (length(p)-n*nsources+1):length(p)) #a matrix    
-    
       pindex<- c( ((u-1)*n+1):(u*n),  #scaling factors
                   total_us*n+ (((u-1)*nsources+1):(u*nsources)), #variances
                   (length(p)-n*nsources+1):length(p)) #a matrix  
-      #print(c(u,pindex))
-      #browser()
       
     } else if ( scale && mean ) {
       pindex<- c( ((u-1)*nsources+1):(u*nsources),  #means
@@ -114,13 +120,14 @@ scaledgaussian_likelihood<-function(p,D,gradient=TRUE,verbose=FALSE,us=1:nrow(D$
     }
     pu<-p[pindex] #parameters for this particular segment
     
-    mux<-D$mux[u,]
+    mux<-D$mux[u,]  #data has D$mux[u,] as mean of x and D$sigmax[u,,] as the covariance/correlation matrix
     if (!mean) mux=NA
+    
     ll<-scaledgaussian_likelihood_p(pu,mux=mux,sigmax=D$sigmax[u,,],N=D$N,gradient=gradient,verbose=verbose,X=NULL,nsources,scale=scale,noisevar=noisevar,mean=mean)
     #cat('u:',u,'ll:',ll,'\n')
     if ( is.na(ll) ) return(NA)
-    #browser()
-    l<-l+ll
+    
+    l<-l+ll  #here could apply the weighting of different data sets
     if (gradient) grad[pindex]<-grad[pindex]+attr(ll,'gradient')
     
   }
@@ -128,11 +135,10 @@ scaledgaussian_likelihood<-function(p,D,gradient=TRUE,verbose=FALSE,us=1:nrow(D$
   l
 }
 
-
-#still for one u
 scaledgaussian_likelihood_p<-function(p,mux=colMeans(X),sigmax=(N-1)/N*cov(X),N=nrow(X),gradient=TRUE,verbose=FALSE,X=NULL,nsources=n,noisevar=0.1,scale=FALSE,mean=TRUE) {
-  #cat('at continuous likelihood\n')
-  #print(p)
+  #Scaled Gaussian log-likelihood for one segment
+  #The gradient calculation is based on formula derivation using the Matrix Cookbook,
+  #checked against numerical derivative estimates in development phase.
   n<-nrow(sigmax)
   M<-scaledgaussian_p2M(p,n,nsources,scale=scale,mean=mean)
   A<-M$A
@@ -146,16 +152,11 @@ scaledgaussian_likelihood_p<-function(p,mux=colMeans(X),sigmax=(N-1)/N*cov(X),N=
   if ( mean ) mu_y<-A%*%mu_u  
   sigma_y<-A%*%sigma_u%*%t(A)+noisevar*diag(n)
   
-  #print(sigma_y)
   if ( scale ) {
-    #print(q_u)
-    #sigmax<-q_u%*%sigmax%*%q_u
     sigma_y<-q_u%*%sigma_y%*%q_u
     if (mean) mu_y<-q_u%*%mu_y
   }
-  #print(q_u)
-  #browser()
-  #print(sigma_y)
+
   if (!mean) mu_y=NA
   l<-scaledgaussian_likelihood_plain(mu_y,sigma_y,mux=mux,sigmax=sigmax,N=N,gradient=gradient,verbose=FALSE,mean=mean)
   if ( is.na(l)) return(NA)
@@ -195,10 +196,7 @@ scaledgaussian_likelihood_p<-function(p,mux=colMeans(X),sigmax=(N-1)/N*cov(X),N=
     if ( !mean && scale ) {
       attr(l,'gradient')<-c(gq,g2,g3)
     } else {
-      attr(l,'gradient')<-c(g1,
-                            g2,
-                            gq,
-                            g3)      
+      attr(l,'gradient')<-c(g1,g2,gq,g3)      
     }
     
     attr(l,'mug')<-NULL
@@ -242,19 +240,7 @@ scaledgaussian_likelihood_plain<-function(mu,sigma,mux=colMeans(X),sigmax=(N-1)/
   }
 
   l<-as.vector( (-N/2)*(n*log(2*pi)+logdetsigma+sum(diag(sigmax%*%isigma))+ corr ) )
-  #while ( detsigma < 1e-20 ) {
-  #  cat('Sigma regularized.\n')
-  #  browser()
-  #  reg=10
-  #  evs<-eigen(sigma)$values
-  #  deltai<-max(c( 0 , (max(evs)-reg*min(evs))/(reg-1) ) )
-  #  sigma<-1/(1+deltai)*(sigma+deltai*diag(nrow(sigma))) 
-  #  detsigma<-detsigma
-  #}
   
-  
-  #l<-as.vector( (-N/2)*(n*log(2*pi)+logdetsigma+sum(diag(sigmax%*%isigma))+ corr ) )
-  #browser()
   if (gradient) {
     if (mean) attr(l,'mug')<-(-N/2)*(-2*isigma%*%(mux-mu))
     #-diag(diag(isigma))

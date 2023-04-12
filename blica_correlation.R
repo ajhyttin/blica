@@ -1,5 +1,5 @@
 blica_correlation<-function( counts, method='o',transform=FALSE,verbose=FALSE,cortru=NA) {
-  #cat('At sense_correlation:\n')
+  #cat('At blica_correlation:\n')
   #browser()
 
   #if ( method!= "weighted") counts<-counts+1
@@ -12,9 +12,9 @@ blica_correlation<-function( counts, method='o',transform=FALSE,verbose=FALSE,co
   #print(counts)
   #counts<-counts/sum(counts)
   if ( method == 'first' ) {
-    Dp<-sense_createdata(n=2,u=1,pairwise=FALSE) #now need to update counts
+    Dp<-blica_createdata(n=2,u=1,pairwise=FALSE) #now need to update counts
     Dp$counts[1,]<-counts
-    R<-sense_lbfgs(Dp,verbose=TRUE)
+    R<-blica_lbfgs(Dp,verbose=TRUE)
     covesti<-diag(nrow(Dp$M$A))+pi/8*R$M$A%*%diag(exp(R$M$sigma[1,]))%*%t(R$M$A)
     coresti<-cov2cor(covesti)
     print(coresti[1,2])
@@ -38,7 +38,7 @@ blica_correlation<-function( counts, method='o',transform=FALSE,verbose=FALSE,co
     alpha0<-p0<-counts2cor(counts)
     if ( !transform ) {
       #cat('NOT transformed.\n')
-      #R<-optim(par=p0,fn=sense_correlation_f,gr=sense_correlation_g,method="L-BFGS-B",
+      #R<-optim(par=p0,fn=blica_correlation_f,gr=blica_correlation_g,method="L-BFGS-B",
       #       control=list(maxit=100000),
       #       upper=0.999,lower=-0.999,
       #       counts=counts,mu=mu,transform=transform,f_upper=0)
@@ -51,18 +51,18 @@ blica_correlation<-function( counts, method='o',transform=FALSE,verbose=FALSE,co
       }
       interval=c(-1+1e-5,1-1e-5)
     #if (method == "weighted") interval=c(-1,1)
-      R<-optimize(f=sense_correlation_f,interval=interval,tol=tol,
+      R<-optimize(f=blica_correlation_f,interval=interval,tol=tol,
                   counts=counts,mu=mu,transform=transform,f_upper=0)
       #  10.198  secs
       R$par<-R$minimum   
       if (method == "weighted") {
         #browser()
-        #fpar<-sense_correlation_f(R$par,counts=counts,mu=mu,f_upper=0)
-        #lower<-sense_correlation_f(max(c(-1,R$par-0.1)),counts=counts,mu=mu,f_upper=0)
-        #upper<-sense_correlation_f(min(c(1,R$par+0.1)),counts=counts,mu=mu,f_upper=0)
+        #fpar<-blica_correlation_f(R$par,counts=counts,mu=mu,f_upper=0)
+        #lower<-blica_correlation_f(max(c(-1,R$par-0.1)),counts=counts,mu=mu,f_upper=0)
+        #upper<-blica_correlation_f(min(c(1,R$par+0.1)),counts=counts,mu=mu,f_upper=0)
         #w<-max(abs(lower-fpar),abs(fpar-upper))
        # print(c(lower,upper))
-        #sense_correlation_f(R$par-1e-3,counts=counts,mu=mu,f_upper=0)
+        #blica_correlation_f(R$par-1e-3,counts=counts,mu=mu,f_upper=0)
         #a<-seq(from=-1+1e-5,to=1-1e-5,length.out=100)
         #a<-c(R$par-0.01,R$par,R$par+0.01)
         a<-sort(R$par+rnorm(100,sd=0.1))
@@ -70,7 +70,7 @@ blica_correlation<-function( counts, method='o',transform=FALSE,verbose=FALSE,co
         a<-a[a<1]
         fval<-rep(0,length(a))
         for ( iii in 1:length(a) ) {
-          fval[iii]<-sense_correlation_f(a[iii],counts=counts,mu=mu,f_upper=0,transform=transform)-R$objective
+          fval[iii]<-blica_correlation_f(a[iii],counts=counts,mu=mu,f_upper=0,transform=transform)-R$objective
         }
         asq<-(a-R$par)^2
         M<-lm(fval~asq-1)
@@ -122,7 +122,7 @@ blica_correlation<-function( counts, method='o',transform=FALSE,verbose=FALSE,co
         a<-seq(from=-1+1e-5,to=1-1e-5,by=0.01)
         fval<-rep(0,length(a))
         for ( iii in 1:length(a) ) {
-          fval[iii]<-sense_correlation_f(a[iii],counts=counts,mu=mu,f_upper=0)
+          fval[iii]<-blica_correlation_f(a[iii],counts=counts,mu=mu,f_upper=0)
         }
         plot(a,-fval)
         asq<-a^2
@@ -135,27 +135,27 @@ blica_correlation<-function( counts, method='o',transform=FALSE,verbose=FALSE,co
       #cat('Transformed.\n')
       p0<-log((p0+1)/2)-log((1-(p0+1)/2))
       #browser()
-     # R<-optim(par=p0,fn=sense_correlation_f,gr=sense_correlation_g,method="L-BFGS-B",
+     # R<-optim(par=p0,fn=blica_correlation_f,gr=blica_correlation_g,method="L-BFGS-B",
     #         upper=15.293,lower=-15.293, #according to above
      #        control=list(maxit=100000,pgtol=1e-10,factr=0),
       #       counts=counts,mu=mu,transform=transform,f_upper=0)
       #32 sec 10 segments 10 obs 
       #THE USED:
-      #R<-optim(par=p0,fn=sense_correlation_f,gr=sense_correlation_g,method="Brent",
+      #R<-optim(par=p0,fn=blica_correlation_f,gr=blica_correlation_g,method="Brent",
       #         upper=15.293,lower=-15.293, #according to above
       #         control=list(maxit=100000,pgtol=1e-10,factr=0),
       #         counts=counts,mu=mu,transform=transform,f_upper=0)
       #14.5 sec  10 segments 10 obs
-      #R<-optim(par=p0,fn=sense_correlation_f,gr=sense_correlation_g,method="Brent",
+      #R<-optim(par=p0,fn=blica_correlation_f,gr=blica_correlation_g,method="Brent",
       #         upper=15.293,lower=-15.293, #according to above
       #         control=list(maxit=10,pgtol=1e-2,factr=10),
       #         counts=counts,mu=mu,transform=transform,f_upper=0)
       #no help
-      #R<-optim(par=p0,fn=sense_correlation_f,gr=sense_correlation_g,method="Brent",
+      #R<-optim(par=p0,fn=blica_correlation_f,gr=blica_correlation_g,method="Brent",
       #         upper=15.293,lower=-15.293, #according to above
                #control=list(maxit=100000,pgtol=1e-10,factr=0),
        #        counts=counts,mu=mu,transform=transform,f_upper=0)
-      R<-optimize(f=sense_correlation_f,interval=c(-15.293,15.293),
+      R<-optimize(f=blica_correlation_f,interval=c(-15.293,15.293),
                counts=counts,mu=mu,transform=transform,f_upper=0)
       # 11.363 secs
       R$par<-R$minimum
@@ -163,9 +163,9 @@ blica_correlation<-function( counts, method='o',transform=FALSE,verbose=FALSE,co
     }
     #print(R)
     #alpha<-2*exp(R$par)/(1+exp(R$par))-1
-    #nlminb(start=0,objective=sense_correlation_f, gradient=sense_correlation_g,counts=counts,mu=mu,upper=1,lower=-1)
+    #nlminb(start=0,objective=blica_correlation_f, gradient=blica_correlation_g,counts=counts,mu=mu,upper=1,lower=-1)
     #print(alpha)
-    #sense_correlation_g(R$par,counts,mu,verbose=TRUE)
+    #blica_correlation_g(R$par,counts,mu,verbose=TRUE)
     alpha<-R$par
     if ( method == "weighted") attr(alpha,'weight')<-w
     #alpha<-R$minimum
@@ -176,14 +176,14 @@ blica_correlation<-function( counts, method='o',transform=FALSE,verbose=FALSE,co
       #((alpha+1)/2)/(1-(alpha+1)/2)<-exp(R$par) 
       #alpha<-log((R$par+1)/2)-log((1-(R$par+1)/2))
     }
-    #df<-sense_correlation_g(alpha,counts=counts,mu=mu,transform=FALSE,f_upper=0)
+    #df<-blica_correlation_g(alpha,counts=counts,mu=mu,transform=FALSE,f_upper=0)
     if (verbose ) cat('spearman:',alpha0,'qcor:',alpha,'grad:',df,'\n')
     #browser()
     alpha
   }
 }
 
-sense_correlation_f<-function(x,counts,mu,transform=TRUE,f_upper) {
+blica_correlation_f<-function(x,counts,mu,transform=TRUE,f_upper) {
   #x is now the only parameter
   #transform x
   xorig<-x
@@ -203,7 +203,7 @@ sense_correlation_f<-function(x,counts,mu,transform=TRUE,f_upper) {
   f_upper-fval
 }
 
-sense_correlation_g<-function(x,counts,mu,verbose=FALSE,transform=TRUE,f_upper=0) {
+blica_correlation_g<-function(x,counts,mu,verbose=FALSE,transform=TRUE,f_upper=0) {
   xorig<-x
   if (transform) x<-2*exp(x)/(1+exp(x))-1
   sigma<-diag(2)

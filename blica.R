@@ -1,5 +1,5 @@
-blica<-function(D,type='pairwise',lseed=NA,cor_method='o',verbose=TRUE,reg=0,
-                skip=FALSE, rfile=NULL, delta=0, corfile=NA) {
+blica<-function(D,type='pairwise',lseed=NA,cor_method='o',verbose=TRUE,reg=NA,
+                skip=FALSE, rfile=NULL, delta=0, corfile=NA, n=NA, nsources=NA) {
   #D is the dataset. See for how it is created.
   #type 
   #lseed
@@ -11,32 +11,44 @@ blica<-function(D,type='pairwise',lseed=NA,cor_method='o',verbose=TRUE,reg=0,
   #delta - 
   #corfile -
   
+  true_model_given = !is.null(D$M)
+  
   #first step
-  #delta<-0 #0.1 #0.1
-  cat('reg=',reg,'\n')
-  n<-nrow(D$M$A)
-  nsources<-ncol(D$M$A)
-  if (D$type=="sample") {
-    us<-length(D$X)
-  } else {
-    us<-nrow(D$M$mu)
-  } 
+  if ( is.na(reg) && D$type == "sample" ) reg<-10 #regularization needed only for sample data
+  if ( is.na(reg) && D$type == "infinite" ) reg<-0
+  cat('reg =',reg,'\n')
+
+  if ( is.na(n) && D$type == "sample" ) n<-ncol(D$X[[1]])
+  if ( is.na(n) && D$type == "infinite" ) n<-max(DI$pairs)
+  cat('n =',n,'\n')
   
-  if ( is.na(corfile) ) {
-  cat('PHASE 1: Find covariances.\n')
-  truecovs_adj<-truecovs<-array(0,c(nrow(D$M$A),nrow(D$M$A),us))
+  if (is.na(nsources) && true_model_given ) nsources<-ncol(D$M$A) #number of sources can be determined only 
+                                                              #if the true model is given
+  if ( is.na(nsources)) stop('Please give the number of sources as input blica(D,nsources=nsources).')
+  cat('nsources =',nsources,'\n')
   
-  omus<-array(0,c(nrow(D$M$A),nrow(D$counts)))
-  qs<-trueqs<-array(1,c(nrow(D$counts),nrow(D$M$A)))
+  
+  if (D$type=="sample") us<-length(D$X)
+  if (D$type == "infinite" )  us<-dim(DI$counts)[1]
+  cat('segments=',us,'\n')
+  
+  
+  cat('PHASE 1: Estimate pairwise correlations from binary data.\n')
+  
+  if ( true_model_given ) { #these are used for outputs only when true model is present
+    truecovs_adj<-truecovs<-array(0,c(nrow(D$M$A),nrow(D$M$A),us))
+    omus<-array(0,c(nrow(D$M$A),nrow(D$counts)))
+    qs<-trueqs<-array(1,c(nrow(D$counts),nrow(D$M$A)))
+  }
   cat('Estimating correlation matrices:\n')
   tic()
   index<-0
-  #continuous data to be used later
+  #create the continuous data structure into whcih the estimates will be written
   DC<-blica_createdatac(n=n,u=us,nsources=nsources)
   DC$M$A<-D$M$A
   for ( u in 1:us ) {
     
-    if ( D$type != "sample" ) {
+    if ( D$type != "sample" && true_model_given) {
       covtru<-diag(nrow(D$M$A))+pi/8*D$M$A%*%diag(exp(D$M$sigma[u,]))%*%t(D$M$A)   
       truecovs[,,u]<-covtru
       truecovs_adj[,,u]<-(8/pi* (truecovs[,,u]-diag(nrow(D$M$A))))
@@ -46,14 +58,15 @@ blica<-function(D,type='pairwise',lseed=NA,cor_method='o',verbose=TRUE,reg=0,
     
     for ( i in 1:n ) {
       for ( j in 1:n ) {
-        if ( i >= j ) next;
+        if ( i >= j ) next; #estimate each correlation only once
+        
+        #Calculate the pairwise distribution if not given as input or fetch it.
         if (D$type == "sample" ) {
           counts<-rep(NA,4)
           for ( k in 1:4 ) {
             conf<-dec.to.bin(k-1,2)
             counts[k]<-sum((D$X[[u]][,i]==conf[1]) & (D$X[[u]][,j]==conf[2]) )
           } 
-         # print(counts)
         } else if (D$pairwise) {
           ii<-which(D$pairs[,1] == i & D$pairs[,2] == j)
           counts<-D$counts[u,ii,]
@@ -65,63 +78,44 @@ blica<-function(D,type='pairwise',lseed=NA,cor_method='o',verbose=TRUE,reg=0,
               counts[k]<-sum(D$counts[u,I])
             } 
         }
-        #if ( reg == 1 ) counts<-counts+1
-        #if (any(counts== 0) && skip ) next
-        #if ( any(counts == 0) ) counts<-counts+1
+
         R<-blica_correlation(counts,cor_method)
-        #if ( reg == 2 ) covest<-covest+diag(n)
-        #if ( reg == 3 ) covest<-mpinv(mpinv(covest+diag(n)))
+        
         covest[i,j]<-covest[j,i]<-R
       } #for j
     } #for i
     
     cat('segment:',u,'/',us,'\n')
-    if (D$type != "sample" ) {
+    if (D$type != "sample"  && true_model_given) {
       error<-max(abs(cov2cor(covest)-cov2cor(covtru)))
       cat(' max cor error:',error,'\n')
-      #browser()
     }
-    #while (TRUE ) {
-      #covest<-1/(1+delta)*(covest+delta*diag(n))
-      #while ( TRUE ) {
-      evs<-eigen(covest)$values
-      cat('before eigenvalues:',evs,'\n')      
-      deltai<-max(c( 0 , (max(evs)-reg*min(evs))/(reg-1) ) )
-      #deltai<-0
-      covest<-1/(1+deltai)*(covest+deltai*diag(n))
-      evs<-eigen(covest)$values
-      cat('after eigenvalues:',evs,'\n')      
 
-      if (D$type != "sample" ) {
-        error<-max(abs(cov2cor(covest)-cov2cor(covtru)))
-        cat(' max cor error:',error,'\n')
-      }
-      if (any(evs < 0) ) { #some regularization needed
-        stop('negative eigenvalues after regularization.')
-    #    browser()
-    #    deltai<-max(c(0,(max(evs)-100*min(evs))/99))
-    #    covest<-1/(1+deltai)*(covest+deltai*diag(n))
-        #covest<-covest +(abs(min(evs))+0.1)*diag(n)
-    #    evs<-eigen(covest)$values
-    #    cat(' eigenvalues:',evs,'\n')
-      }
-    #}
-    #print(covest)
+    evs<-eigen(covest)$values
+    cat('min eigenvalue before regularization:',min(evs),'\n')      
+    deltai<-max(c( 0 , (max(evs)-reg*min(evs))/(reg-1) ) )
+    #deltai<-0
+    covest<-1/(1+deltai)*(covest+deltai*diag(n))
+    evs<-eigen(covest)$values
+    cat('min eigenvalue after regularization:',min(evs),'\n')      
+
+    if (D$type != "sample" && true_model_given) {
+      error<-max(abs(cov2cor(covest)-cov2cor(covtru)))
+      cat(' max cor error:',error,'\n')
+    }
+    if (any(evs < 0) ) { #some regularization needed
+      stop('Negative eigenvalues after regularization. Use a higer regularization parameter, e.g., current+10.')
+    }
+
     DC$sigmax[u,,]<-covest
-    print(round(covest,2));
     DC$mux[u,]<-0 #setting means to zero!
     cat('t:',toc(),'\n')
-  } # if ( is.na(corfile) )
+  }
   tphase1<-toc()
   cat('Took:',tphase1,'\n')
   cat('Time after PHASE 1:',tphase1,'\n')
 
-#  cat('saving covs.\n')
-#  save(DC,file=paste(rfile,'.cor',sep=''))
-
-  } #else {
-    
-  cat('PHASE 2: Running LBFGS on scaled Gaussian likelihood:\n')
+  cat('PHASE 2: Running continous segmentwise ICA: LBFGS on scaled Gaussian likelihood:\n')
   if (!is.na(lseed) ) {
     set.seed(lseed);
   }
@@ -150,14 +144,12 @@ blica<-function(D,type='pairwise',lseed=NA,cor_method='o',verbose=TRUE,reg=0,
       mcs<-mcs(D$M$A,Aest)
       kappa<-kappa(Aest)
       cat('t:',lasttoc1,'l:',format(fval,digits=15),'kappa:',kappa,'mcs:',mcs,'\n');
-      print(round(Aest,2));
+      #print(round(Aest,2));
       cat('Variance summary:\n');
       print(summary(exp(x[(u*n+1):(u*n+u*nsources)])));
-      #browser()
-      
-      
+
       if ( !is.null(rfile) ) {
-        if ( !is.null(rfile) ) write.table(Aest,file=paste(rfile,'.mix',sep=''),row.names=FALSE,col.names=FALSE)
+        write.table(Aest,file=paste(rfile,'.mix',sep=''),row.names=FALSE,col.names=FALSE)
         cat(lasttoc1,format(fval,digits=15),mcs,'\n',file=rfile,append=append);
         append<<-TRUE; 
       }
@@ -165,9 +157,8 @@ blica<-function(D,type='pairwise',lseed=NA,cor_method='o',verbose=TRUE,reg=0,
     fval
   } 
   
-  
   #gradient
-  g<-function( x) {
+  g<-function(x) {
     v<-(-1)*attr(scaledgaussian_likelihood(x,DC,gradient=TRUE,noisevar=noisevar,scale=TRUE,mean=mean),'gradient')
     if ( verbose && (abs(toc()-lasttoc2) > interval)  ) { 
       lasttoc2<<-toc()
@@ -175,8 +166,6 @@ blica<-function(D,type='pairwise',lseed=NA,cor_method='o',verbose=TRUE,reg=0,
     }
     v
   }
-
-  #browser()
   
   R<-optim(start,f,g,method="L-BFGS-B",control=list(maxit=100000,factr=0,pgtol=1e-10))#list(trace=6,REPORT=1)
   cat('Done!\n')
@@ -193,7 +182,7 @@ blica<-function(D,type='pairwise',lseed=NA,cor_method='o',verbose=TRUE,reg=0,
   if ( !is.null(rfile) ) write.table(Aest,file=paste(rfile,'.mix',sep=''),row.names=FALSE,col.names=FALSE)
 
   R$l<-scaledgaussian_likelihood(R$par,DC,gradient=FALSE,noisevar=noisevar,scale=TRUE,mean=mean)
-  if ( verbose ) cat('Final likelihood obtained:',R$l,'\n')
+  if ( verbose ) cat('Final likelihood value obtained:',R$l,'\n')
   #browser()
   R$M<-scaledgaussian_p2Mu(R$par,nrow(DC$M$A),nrow(DC$M$mu),ncol(DC$M$A),scale=TRUE,mean=mean)
   invisible(R)  
